@@ -1,3 +1,7 @@
 /mlp-mnist/mnist
 /mlp-mnist/checkpoints
-*/*/__pycache__/
+*/__pycache__/
+/mlp-mnist/log
+/mlp-mnist/plots
+/mlp-mnist/accuracies
+*/*/__pycache__
