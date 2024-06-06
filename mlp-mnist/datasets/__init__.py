@@ -8,18 +8,21 @@ from typing import List, Type
 from .base import BasicDataset
 from .mnist import MNIST
 from .cifar10 import CIFAR10
+from .svhn_format_1_from_torch import SVHN
 
 __all__ = [
     "BasicDataset",
     "dataset_from_name",
     "dataset_names",
     "MNIST",
-    "CIFAR10"
+    "CIFAR10",
+    "SVHN"
 ]
 
 _datasets = {
     MNIST.name: MNIST,
-    CIFAR10.name: CIFAR10
+    CIFAR10.name: CIFAR10,
+    SVHN.name: SVHN
 }
 
 
