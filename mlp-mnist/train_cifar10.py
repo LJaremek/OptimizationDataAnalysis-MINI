@@ -89,7 +89,7 @@ def test(
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += criterion(output, target).item()
+            test_loss += criterion(output, target).item() * data.size(0)
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
 
@@ -111,7 +111,7 @@ def main():
     model = BinarizedConvNet().to(device)
     model = convert(model, RuntimeMode.DEFAULT, device, False)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    optimizer = optim.Adamax(model.parameters(), lr=lr)
 
     # train/test kwargs
     train_kwargs = {"batch_size": batch_size}
@@ -136,7 +136,7 @@ def main():
     train_loader = torch.utils.data.DataLoader(train_dataset, **train_kwargs)
     test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 
-    print(len(train_loader, len(test_loader)))
+    print(train_loader.dataset.get_transform())
 
     # train process
     for epoch in range(1, 11):
