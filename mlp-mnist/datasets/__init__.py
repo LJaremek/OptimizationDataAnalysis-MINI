@@ -7,13 +7,20 @@ from typing import List, Type
 
 from .base import BasicDataset
 from .mnist import MNIST
+from .cifar10 import CIFAR10
 
 __all__ = [
     "BasicDataset",
     "dataset_from_name",
     "dataset_names",
     "MNIST",
+    "CIFAR10"
 ]
+
+_datasets = {
+    MNIST.name: MNIST,
+    CIFAR10.name: CIFAR10
+}
 
 
 def dataset_from_name(name: str) -> Type[BasicDataset]:
@@ -29,9 +36,9 @@ def dataset_from_name(name: str) -> Type[BasicDataset]:
     Returns:
         dataset: the dataset
     """
-    for dataset_class in [MNIST]:
-        if dataset_class.name == name:
-            return dataset_class
+    if name in _datasets:
+        return _datasets[name]
+
     raise Exception(f"unknown dataset: {name}")
 
 
@@ -41,4 +48,4 @@ def dataset_names() -> List[str]:
     Returns:
         List: the dataset names
     """
-    return [dataset_class.name for dataset_class in [MNIST]]
+    return list(_datasets.keys())
