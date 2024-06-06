@@ -1,0 +1,3 @@
+/mlp-mnist/mnist
+/mlp-mnist/checkpoints
+*/*/__pycache__/
