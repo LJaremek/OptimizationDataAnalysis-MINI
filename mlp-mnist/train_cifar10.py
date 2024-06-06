@@ -8,7 +8,7 @@ from bitorch import RuntimeMode
 import bitorch.layers as qnn
 import bitorch_engine
 
-from datasets import CIFAR10, BasicDataset
+from datasets import CIFAR10
 
 bitorch_engine.initialize()
 
@@ -31,81 +31,31 @@ class BinarizedConvNet(nn.Module):
         self.fc1 = qnn.QLinear(512*4*4, 1024)
         self.fc2 = qnn.QLinear(1024, 1024)
         self.fc3 = nn.Linear(1024, 10)
-        # self.drop = nn.Dropout(0.5)
+        self.fc3 = qnn.QLinear(1024, 10)
 
     def forward(self, x):
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = F.relu(self.bn2(self.conv2(x)))
+        x = self.bn1(self.conv1(x))
+        x = self.bn2(self.conv2(x))
         x = F.max_pool2d(x, 2)
-        x = F.relu(self.bn3(self.conv3(x)))
-        x = F.relu(self.bn4(self.conv4(x)))
+        x = self.bn3(self.conv3(x))
+        x = self.bn4(self.conv4(x))
         x = F.max_pool2d(x, 2)
-        x = F.relu(self.bn5(self.conv5(x)))
-        x = F.relu(self.bn6(self.conv6(x)))
+        x = self.bn5(self.conv5(x))
+        x = self.bn6(self.conv6(x))
         x = F.max_pool2d(x, 2)
         x = x.view(-1, 512*4*4)
-        x = F.relu(self.fc1(x))
-        # x = self.drop(x)
-        x = F.relu(self.fc2(x))
-        # x = self.drop(x)
+        x = self.fc1(x)
+        x = self.fc2(x)
         x = self.fc3(x)
+        x = F.log_softmax(x, dim=1)
         return x
 
 
-def train(
-        model: nn.Module, train_loader: BasicDataset, optimizer, criterion,
-        device: str = "cpu", epoch: int = 1
-        ) -> None:
-
-    model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        data, target = data.to(device), target.to(device)
-
-        optimizer.zero_grad()
-
-        output = model(data)
-        loss = criterion(output, target)
-        loss.backward()
-        optimizer.step()
-
-        if batch_idx % 100 == 0:
-            print(
-                f"Train Epoch: {epoch} [{batch_idx * len(data)}/"
-                f"{len(train_loader.dataset)} "
-                f"({100. * batch_idx / len(train_loader):.0f}%)]\t"
-                f"Loss: {loss.item():.6f}"
-                )
-
-
-def test(
-        model: nn.Module, test_loader: BasicDataset, criterion,
-        device: str = "cpu"
-        ) -> None:
-
-    model.eval()
-    test_loss = 0
-    correct = 0
-    with torch.no_grad():
-        for data, target in test_loader:
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-            test_loss += criterion(output, target).item() * data.size(0)
-            pred = output.argmax(dim=1, keepdim=True)
-            correct += pred.eq(target.view_as(pred)).sum().item()
-
-    test_loss /= len(test_loader.dataset)
-    print(
-        f"\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/"
-        f"{len(test_loader.dataset)} "
-        f"({100. * correct / len(test_loader.dataset):.0f}%)\n"
-        )
-
-
-def main():
+if __name__ == "__main__":
     # parameters
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     batch_size = 128
-    lr = 0.000001
+    lr = 0.0001
 
     # model, criterion, optimizer
     model = BinarizedConvNet().to(device)
@@ -136,16 +86,40 @@ def main():
     train_loader = torch.utils.data.DataLoader(train_dataset, **train_kwargs)
     test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 
-    print(train_loader.dataset.get_transform())
-
-    # train process
+    model.train()
     for epoch in range(1, 11):
-        train(model, train_loader, optimizer, criterion, device, epoch)
-        torch.save(model.state_dict(), f"cifar10_{epoch}.pt")
-        test(model, test_loader, criterion, device)
+        for batch_idx, (data, target) in enumerate(train_loader):
+            data, target = data.to(device), target.to(device)
 
-    test(model, test_loader, criterion, device)
+            optimizer.zero_grad()
+            output = model(data)
+            loss = criterion(output, target)
+            loss.backward()
+            optimizer.step()
 
+            if batch_idx % 100 == 0:
+                print(
+                    f"Train Epoch: {epoch} [{batch_idx * len(data)}/"
+                    f"{len(train_loader.dataset)} "
+                    f"({100. * batch_idx / len(train_loader):.0f}%)]\t"
+                    f"Loss: {loss.item():.6f}"
+                )
+                preds = output.argmax(dim=1)
 
-if __name__ == "__main__":
-    main()
+        model.eval()
+        test_loss = 0
+        correct = 0
+        with torch.no_grad():
+            for data, target in test_loader:
+                data, target = data.to(device), target.to(device)
+                output = model(data)
+                test_loss += criterion(output, target).item() * data.size(0)
+                pred = output.argmax(dim=1, keepdim=True)
+                correct += pred.eq(target.view_as(pred)).sum().item()
+
+        test_loss /= len(test_loader.dataset)
+        print(
+            f"\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/"
+            f"{len(test_loader.dataset)} "
+            f"({100. * correct / len(test_loader.dataset):.0f}%)\n"
+        )
