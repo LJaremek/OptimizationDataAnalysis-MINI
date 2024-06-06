@@ -6,6 +6,7 @@ which was published under the `BSD 3-Clause License <https://github.com/pytorch/
 """
 # fmt: off
 import argparse
+from datetime import datetime
 
 import torch
 import torch.nn as nn
@@ -53,32 +54,6 @@ class QuantizedMLP(nn.Module):
         return output
 
 
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
-        self.dropout1 = nn.Dropout(0.25)
-        self.dropout2 = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, 10)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
-        x = self.dropout1(x)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.dropout2(x)
-        x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
-        return output
-
-
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -117,9 +92,7 @@ def test(model, device, test_loader):
 
 def main():
     # Training settings
-    parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--model', type=str, choices=["mlp", "lenet"], default="lenet",
-                        help='input batch size for training (default: 64)')
+    parser = argparse.ArgumentParser(description='Binary PyTorch MLP')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
@@ -129,7 +102,9 @@ def main():
     parser.add_argument('--lr', type=float, default=1.0, metavar='LR',
                         help='learning rate (default: 1.0)')
     parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
-                        help='Learning rate step gamma (default: 0.7)')
+                        help='learning rate step gamma (default: 0.7)')
+    parser.add_argument('--optimizer', type=str, choices=["adam", "adamax", "adadelta"], default="adadelta",
+                        help='optimizer to use (default: adadelta)')
     parser.add_argument('--no-cuda', action='store_true',
                         help='disables CUDA training')
     parser.add_argument('--dry-run', action='store_true',
@@ -161,12 +136,16 @@ def main():
 
     train_loader = torch.utils.data.DataLoader(train_dataset, **train_kwargs)
     test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
-
-    if args.model == "mlp":
-        model = QuantizedMLP().to(device)
+    
+    model = QuantizedMLP().to(device)
+    
+    # Optimizer selection
+    if args.optimizer == "adam":
+        optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    elif args.optimizer == "adamax":
+        optimizer = optim.Adamax(model.parameters(), lr=args.lr)
     else:
-        model = Net().to(device)
-    optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
+        optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):
@@ -174,12 +153,12 @@ def main():
         test(model, device, test_loader)
         scheduler.step()
 
-    # inference_model = convert(model, RuntimeMode.INFERENCE_AUTO, device=device, verbose=True)
     test(model, device, test_loader)
 
     if args.save_model:
-        torch.save(model.state_dict(), "mnist_cnn.pt")
-
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+        model_name = f"bi_mlp_{args.optimizer}_{timestamp}.pt"
+        torch.save(model.state_dict(), f"./checkpoints/{model_name}")
 
 if __name__ == '__main__':
     main()
