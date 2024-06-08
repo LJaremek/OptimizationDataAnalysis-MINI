@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import pandas as pd
 import torch
 
 
@@ -52,3 +54,74 @@ def test(model, criterion, test_loader, device: str) -> tuple[float, float]:
     test_accuracy = 100. * correct / len(test_loader.dataset)
 
     return test_loss, test_accuracy
+
+
+def plot_models_optimizers(
+        df: pd.DataFrame, df_name: str,
+        x_axis: str, y_axis: str,
+        x_unit: str = None,
+        y_unit: str = None
+        ) -> None:
+
+    optimizer_names = df["optimizer_name"].unique()
+    model_names = df["model_name"].unique()
+
+    model_styles = {
+        "Binary": {"linestyle": "--", "marker": "o"},
+        "Classic": {"linestyle": "-", "marker": "x"}
+        }
+
+    optimizer_colors = {
+        "Adam": "red",
+        "AdaMax": "blue",
+        "AdaDelta": "green"
+    }
+
+    plt.figure(figsize=(12, 8))
+
+    for optimizer_name in optimizer_names:
+        for model_name in model_names:
+            df_filtered = df[
+                (df["optimizer_name"] == optimizer_name) &
+                (df["model_name"] == model_name)
+                ]
+
+            if not df_filtered.empty:
+                style = model_styles.get(
+                    model_name,
+                    {"linestyle": "-", "marker": ""}
+                    )
+
+                color = optimizer_colors.get(optimizer_name, "black")
+                plt.plot(
+                    df_filtered[x_axis],
+                    df_filtered[y_axis],
+                    label=f"{model_name} ({optimizer_name})",
+                    linestyle=style["linestyle"],
+                    marker=style["marker"],
+                    color=color
+                    )
+
+    title = f"{df_name}\n{y_axis} on Models "
+    title += f"with Different Optimizers Over {x_axis}"
+    plt.title(title)
+
+    if x_unit is None:
+        plt.xlabel(x_axis.title())
+    else:
+        plt.xlabel(f"{x_axis.title()} {x_unit}")
+
+    if y_unit is None:
+        plt.ylabel(y_axis.title())
+    else:
+        plt.ylabel(f"{y_axis.title()} {y_unit}")
+
+    plt.legend(
+        title="Model (Optimizer)",
+        bbox_to_anchor=(1.05, 1),
+        loc="upper left"
+        )
+
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
