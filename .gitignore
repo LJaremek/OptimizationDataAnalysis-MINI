@@ -6,3 +6,4 @@
 */__pycache__
 /svhn/*
 */*/__pycache__/
+mlp-mnist/log_new
