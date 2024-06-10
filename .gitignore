@@ -1,4 +1,8 @@
 /mlp-mnist/mnist
 /mlp-mnist/checkpoints
+/mlp-mnist/accuracies
+/mlp-mnist/log
+/mlp-mnist/plots
+*/__pycache__
 /svhn/*
 */*/__pycache__/
