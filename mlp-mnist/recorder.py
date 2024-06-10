@@ -25,7 +25,7 @@ def plot_results(epochs, test_losses, train_accuracies, test_accuracies, plot_fi
 
 
 def setup_logging(log_filename):
-    log_dir = "./log"
+    log_dir = "./log_new"
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, log_filename)
 
