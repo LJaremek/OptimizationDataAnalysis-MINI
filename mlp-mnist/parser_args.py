@@ -6,7 +6,7 @@ def parse_arguments():
     parser.add_argument(
         "--model",
         type=str,
-        choices=["bimlp", "mlp"],
+        choices=["bimlp", "mlp", "qmlp"],
         default="bi_mlp",
         help="model to use (default: binary mlp (bimlp))",
     )

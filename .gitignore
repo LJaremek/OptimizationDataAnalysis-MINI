@@ -7,3 +7,6 @@
 /svhn/*
 */*/__pycache__/
 mlp-mnist/log_new
+mlp-mnist/data
+mlp-mnist/log2
+/output

@@ -18,11 +18,12 @@ from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
-from binary_mlp import BinarizedMLP
-from mlp import MLP
-from tools import train, test
+from model_mnist import MLP, BinarizedMLP
+from model_brevitas_mnist import MLPQuantized
+from mnist_tools import train, test
 from recorder import plot_results, setup_logging
 from parser_args import parse_arguments
+import torch.quantization as quant
 
 
 if __name__ == "__main__":
@@ -34,7 +35,6 @@ if __name__ == "__main__":
 
     train_kwargs = {'batch_size': args.batch_size}
     test_kwargs = {'batch_size': args.test_batch_size}
-    
     
     if use_cuda:
         cuda_kwargs = {'num_workers': 1,
@@ -57,6 +57,8 @@ if __name__ == "__main__":
     
     if args.model == 'bimlp':
         model = BinarizedMLP().to(device)
+    elif args.model == 'qmlp':
+        model = MLPQuantized().to(device)
     else:
         model = MLP().to(device)
     
@@ -73,7 +75,7 @@ if __name__ == "__main__":
     # Set up logging
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
     log_filename = f"{args.model}_{args.optimizer}_{timestamp}.txt"
-    logger = setup_logging(log_filename)
+    logger = setup_logging(log_filename, './temp')
 
     train_losses, test_losses = [], []
     train_accuracies, test_accuracies = [], []
