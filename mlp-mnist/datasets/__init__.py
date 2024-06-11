@@ -8,7 +8,7 @@ from typing import List, Type
 from .base import BasicDataset
 from .mnist import MNIST
 from .cifar10 import CIFAR10
-from .svhn_format_1_from_torch import SVHN
+from .svhn import SVHN
 
 __all__ = [
     "BasicDataset",
