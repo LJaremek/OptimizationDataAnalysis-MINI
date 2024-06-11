@@ -5,6 +5,7 @@
 /mlp-mnist/plots
 */__pycache__
 /svhn/*
+/mlp-mnist/svhn/*
 */*/__pycache__/
 mlp-mnist/log_new
 mlp-mnist/data
